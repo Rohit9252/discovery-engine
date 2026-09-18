@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Google Photos AI Discovery Engine</title>
-  <link rel="icon" href="https://www.gstatic.com/images/branding/product/1x/photos_2020_48dp.png" type="image/png" />
+  <title>Lens - Google Photos Discovery Engine</title>
+  <meta name="description" content="AI-powered PM research tool analyzing 400+ real user reviews to surface Google Photos discovery failures and feature opportunities.">
   <link rel="stylesheet" href="/static/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
@@ -13,8 +13,11 @@
   <header class="header">
     <div class="header-left">
       <div class="logo">
-        <img class="google-photos-logo" alt="Google Photos Logo" src="data:image/png;base64,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" />
-        <h1>Google Photos</h1>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--google-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <div style="display: flex; flex-direction: column;">
+          <h1>Lens</h1>
+          <span class="tool-subtitle" style="font-size: 11px; color: #5f6368; font-weight: 500; margin-top: -2px;">Google Photos Discovery Engine</span>
+        </div>
       </div>
     </div>
     
@@ -54,28 +57,28 @@
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #E8F0FE; color: var(--google-blue);">📋</div>
             <div class="stat-info">
-              <div class="stat-value">2,840</div>
-              <div class="stat-label">App & Play Store Reviews</div>
+              <div class="stat-value" id="stat-total-reviews">-</div>
+              <div class="stat-label">Total Reviews Analyzed</div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #E6F4EA; color: var(--google-green);">✨</div>
             <div class="stat-info">
-              <div class="stat-value">642</div>
-              <div class="stat-label">Cleaned Queries</div>
+              <div class="stat-value" id="stat-cleaned">-</div>
+              <div class="stat-label">Cleaned Reviews</div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FEF7E0; color: #E37400;">🧩</div>
             <div class="stat-info">
-              <div class="stat-value">38</div>
+              <div class="stat-value" id="stat-themes">-</div>
               <div class="stat-label">Synthesized Themes</div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FCE8E6; color: var(--google-red);">⚠️</div>
             <div class="stat-info">
-              <div class="stat-value">5</div>
+              <div class="stat-value" id="stat-stages">-</div>
               <div class="stat-label">Core Failure Stages</div>
             </div>
           </div>
@@ -85,32 +88,7 @@
       <!-- Top Discovery Insights -->
       <section class="top-insights mt-4">
         <h2 class="section-title">Top Discovery Insights</h2>
-        <div class="grid-2">
-          <div class="insight-card">
-            <h3 class="blue-title">Q1 • WHY USERS STRUGGLE WITH OLD PHOTOS</h3>
-            <p>Users face friction when relying on vague temporal or contextual queries to find old photos, as the search engine expects precise keywords or explicit metadata tags.</p>
-            <blockquote>"I know I have a picture of my dog at the beach from 2019, but searching 'dog beach' just shows random sand photos."</blockquote>
-            <span class="pill-tag">15 reviews • Search Friction</span>
-          </div>
-          <div class="insight-card">
-            <h3 class="blue-title">Q2 • LOST ALBUM STRUCTURES</h3>
-            <p>Album structures from legacy systems or physical transfers do not persist properly, leaving users with a massive chronologically disorganized feed.</p>
-            <blockquote>"Transferred all my albums from my PC and now they are just one massive dump of photos by date. Impossible to find anything."</blockquote>
-            <span class="pill-tag">28 reviews • Data Migration</span>
-          </div>
-          <div class="insight-card">
-            <h3 class="blue-title">Q3 • RECEIPT & DOCUMENT RETRIEVAL</h3>
-            <p>Searching for text within images (OCR) is perceived as inconsistent, especially for functional documents like receipts or screenshots.</p>
-            <blockquote>"I took a photo of a receipt for a monitor I bought last month. Searching 'receipt' or 'monitor' brings up nothing."</blockquote>
-            <span class="pill-tag">12 reviews • OCR Failure</span>
-          </div>
-          <div class="insight-card">
-            <h3 class="blue-title">Q4 • FACE TAGGING LIMITATIONS</h3>
-            <p>Users are frustrated when they cannot manually tag faces that the AI missed, preventing them from creating complete people albums.</p>
-            <blockquote>"Google photos recognizes faces well most of the time, but when it misses one, there is no way for me to add a tag manually."</blockquote>
-            <span class="pill-tag">19 reviews • Face Tagging</span>
-          </div>
-        </div>
+        <div id="insights-grid" class="grid-2"></div>
       </section>
 
       <!-- Strongest Signal -->
@@ -120,7 +98,7 @@
              <div class="hero-icon">🚨</div>
              <div class="hero-title">
                <h3>Contextual & Temporal Search Failures</h3>
-               <p>Extracted from 2,840 App & Play Store reviews • Primary driver of query abandonment</p>
+               <p>Extracted from <span id="hero-count">...</span> reviews across <span id="hero-sources">...</span> sources • Primary driver of query abandonment</p>
              </div>
           </div>
           <div class="hero-columns">
@@ -149,7 +127,7 @@
         <div class="card chart-card">
           <div class="chart-header-row">
             <h2>Failure Stages in Retrieval Funnel</h2>
-            <div class="insight-badge-sm"><span class="icon">💡</span> 62% of failed sessions involve multi-attribute queries</div>
+            <div class="warning-badge-sm"><span class="icon">⚠️</span> 62% of failed sessions involve multi-attribute queries</div>
           </div>
           <div class="chart-container">
             <canvas id="stageChart"></canvas>
@@ -158,7 +136,7 @@
         <div class="card chart-card">
           <div class="chart-header-row">
             <h2>Top Pain Point Themes (Severity & Frequency)</h2>
-            <span class="card-footer-sm">N=2,840 App & Play Store reviews</span>
+            <span class="card-footer-sm" id="chart-n-label">Loading...</span>
           </div>
           <div class="chart-container">
             <canvas id="themeChart"></canvas>

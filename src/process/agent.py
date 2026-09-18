@@ -197,6 +197,9 @@ from pydantic import BaseModel, Field
 class StructuredAnswer(BaseModel):
     synthesis: str = Field(description="2-3 sentences summarizing the core user pain pattern across the evidence.")
     key_evidence: list[str] = Field(description="List of quotes from relevant reviews, citing source in brackets e.g. [1].")
+    pm_implication: str = Field(
+        description="1-2 sentences on product strategy impact. When describing failed retrieval, use 'low Search-to-Open Rate' or 'high scroll-fallback rate'. Explicitly label 'Retrieval Success Rate' as the North Star outcome metric, and 'query refinement rate' as a leading indicator."
+    )
 
 def answer_generator(state: AgentState) -> AgentState:
     """
@@ -234,21 +237,18 @@ Question: {question}"""
     structured_llm = llm.with_structured_output(StructuredAnswer)
     response = structured_llm.invoke(prompt)
 
-    # Reconstruct the exact Markdown we want
     answer_text = f"**Synthesis**\n{response.synthesis}\n\n**Key Evidence**\n"
     for evidence in response.key_evidence:
         if not evidence.startswith("-"):
             answer_text += f"- {evidence}\n"
         else:
             answer_text += f"{evidence}\n"
-
-    # Brutal regex cutoff: The LLM is smuggling PM implications inside the JSON strings.
-    # We will slice the final markdown string at the first sign of "PM Implication".
-    import re
-    answer_text = re.split(r'(?i)\n\s*(?:\*\*|###\s*)?PM Implication', answer_text)[0].strip()
+            
+    if hasattr(response, 'pm_implication') and response.pm_implication:
+        answer_text += f"\n**PM Implication**\n{response.pm_implication}\n"
 
     logger.info("[Node 4] Answer generated (%d chars).", len(answer_text))
-    return {**state, "answer": answer_text}
+    return {**state, "answer": answer_text.strip()}
 
 
 # ── Node 5: Hallucination Guard ───────────────────────────────────────────────

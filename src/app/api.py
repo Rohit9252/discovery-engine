@@ -101,17 +101,87 @@ async def get_chart_data():
                     theme_counts[theme] = theme_counts.get(theme, 0) + 1
                     matched_any_theme = True
 
+        sources_connected = len(set(r.source for r in reviews if r.source))
+        source_breakdown = {}
+        for r in reviews:
+            if r.source:
+                source_breakdown[r.source] = source_breakdown.get(r.source, 0) + 1
+
+        failure_stages_list = [
+            {"stage": k, "count": v}
+            for k, v in sorted(stage_counts.items(), key=lambda x: -x[1])
+        ]
+        themes_list = [
+            {"theme": k, "count": v}
+            for k, v in sorted(theme_counts.items(), key=lambda x: -x[1])
+        ]
+
         return JSONResponse({
             "total_reviews": len(reviews),
-            "failure_stages": [
-                {"stage": k, "count": v}
-                for k, v in sorted(stage_counts.items(), key=lambda x: -x[1])
-            ],
-            "themes": [
-                {"theme": k, "count": v}
-                for k, v in sorted(theme_counts.items(), key=lambda x: -x[1])
-            ],
+            "sources_connected": sources_connected,
+            "cleaned_count": len(reviews),
+            "failure_stages_count": len(failure_stages_list),
+            "themes_count": len(themes_list),
+            "source_breakdown": source_breakdown,
+            "failure_stages": failure_stages_list,
+            "themes": themes_list,
         })
+
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/api/insights")
+async def get_insights():
+    """
+    Returns the top 4 discovery insights dynamically extracted from the database.
+    Each insight includes a real representative user quote.
+    """
+    try:
+        from src.process.db import get_engine, get_session, ReviewMetadata
+        engine = get_engine()
+        session = get_session(engine)
+        reviews = session.query(ReviewMetadata).all()
+
+        theme_keywords = {
+            "Search":       ["search", "find", "retrieval", "query", "keyword", "ocr", "receipt",
+                             "memory", "remember", "scroll"],
+            "Face Tagging": ["face", "tag", "pet", "cat", "dog", "tagging", "person", "grouped"],
+            "Backup":       ["backup", "cellular", "wifi", "sync", "upload", "pause"],
+            "UI Navigation":["confusing", "navigate", "layout", "where", "locked folder", "20 minutes",
+                             "clicking", "moved"],
+            "Editing":      ["edit", "trim", "video", "crop", "crash", "10 second", "clip"],
+            "Albums":       ["album", "missing", "transfer", "structure", "iphone"],
+        }
+        
+        # Count themes and collect longest quotes
+        theme_data = {t: {"count": 0, "longest_quote": ""} for t in theme_keywords}
+        for r in reviews:
+            text_lower = r.text.lower()
+            for theme, kws in theme_keywords.items():
+                if any(kw in text_lower for kw in kws):
+                    theme_data[theme]["count"] += 1
+                    if len(r.text) > len(theme_data[theme]["longest_quote"]):
+                        # Keep quote length reasonable for UI cards
+                        if len(r.text) < 300:
+                            theme_data[theme]["longest_quote"] = r.text
+        
+        top_themes = sorted(theme_data.items(), key=lambda x: -x[1]["count"])[:4]
+        
+        insights = []
+        for theme, data in top_themes:
+            # Fallback text if no review matched length criteria
+            quote = data['longest_quote'] or f"Multiple users reported {theme.lower()} issues."
+            
+            insights.append({
+                "title": f"{theme} Issues",
+                "summary": f"Users are struggling with {theme.lower()} according to {data['count']} user reviews.",
+                "quote": quote,
+                "review_count": data['count'],
+                "theme_tag": theme
+            })
+            
+        return JSONResponse(insights)
 
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)

@@ -190,6 +190,7 @@ body {
 .chart-card { gap: 8px; padding: 20px; }
 .chart-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .insight-badge-sm { background: #E6F4EA; color: #137333; padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.warning-badge-sm { background: #FCE8E6; color: var(--google-red); padding: 4px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .card-footer-sm { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
 
 /* Pipeline Architecture */

@@ -5,11 +5,24 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from src.process.db import get_engine, get_session, ReviewMetadata, init_db
 import datetime
 
+
+def clear_mock_data():
+    """Remove all seeded mock records (id starts with 'seed_') from the DB."""
+    engine = get_engine()
+    session = get_session(engine)
+    deleted = session.query(ReviewMetadata).filter(
+        ReviewMetadata.id.like("seed_%")
+    ).delete(synchronize_session=False)
+    session.commit()
+    print(f"Cleared {deleted} mock seed records from the database.")
+    return deleted
+
+
 def seed_database():
     engine = get_engine()
     init_db(engine)
     session = get_session(engine)
-    
+
     # Check if already seeded
     existing = session.query(ReviewMetadata).count()
     if existing > 0:
@@ -26,7 +39,7 @@ def seed_database():
         ("forums", "I transferred my photos to my new iPhone and now half my albums are missing. The photos are there but the album structure is gone.", "user7"),
         ("play_store", "Editing videos on this app crashes it 90% of the time. I just want to trim a 10 second clip.", "user8"),
     ]
-    
+
     count = 0
     for idx, (source, text, author) in enumerate(mock_reviews):
         review = ReviewMetadata(
@@ -40,9 +53,10 @@ def seed_database():
         )
         session.add(review)
         count += 1
-        
+
     session.commit()
     print(f"Seeded {count} highly realistic test reviews into SQLite.")
+
 
 if __name__ == "__main__":
     seed_database()

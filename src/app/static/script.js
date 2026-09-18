@@ -17,6 +17,18 @@ async function loadCharts() {
     const data = await res.json();
     if (data.error) return;
 
+    // Update live data elements
+    const updateEl = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+    
+    updateEl('stat-total-reviews', data.total_reviews.toLocaleString());
+    updateEl('stat-cleaned', data.cleaned_count.toLocaleString());
+    updateEl('stat-themes', data.themes_count);
+    updateEl('stat-stages', data.failure_stages_count);
+    
+    updateEl('chart-n-label', `N=${data.total_reviews.toLocaleString()} reviews across ${data.sources_connected} sources`);
+    updateEl('hero-count', data.total_reviews.toLocaleString());
+    updateEl('hero-sources', data.sources_connected);
+
     // Charts
     new Chart(document.getElementById('stageChart').getContext('2d'), {
       type: 'bar',
@@ -212,4 +224,30 @@ if (chatFab && closeChatBtn && chatWidget) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', () => { loadCharts(); inputEl.focus(); });
+async function loadInsights() {
+  try {
+    const res = await fetch('/api/insights');
+    const insights = await res.json();
+    if (insights.error || !Array.isArray(insights)) return;
+
+    const grid = document.getElementById('insights-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    insights.forEach((insight, index) => {
+      const card = document.createElement('div');
+      card.className = 'insight-card';
+      card.innerHTML = `
+        <h3 class="blue-title">Q${index + 1} • ${insight.title.toUpperCase()}</h3>
+        <p>${insight.summary}</p>
+        <blockquote>"${insight.quote}"</blockquote>
+        <span class="pill-tag">${insight.review_count} reviews • ${insight.theme_tag}</span>
+      `;
+      grid.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Failed to load insights:', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadCharts(); loadInsights(); inputEl.focus(); });

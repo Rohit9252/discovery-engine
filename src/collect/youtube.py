@@ -68,8 +68,16 @@ if __name__ == "__main__":
     
     api_key = os.getenv("YOUTUBE_API_KEY")
     if api_key:
-        # Targeting popular Google Photos tutorial/review videos
-        target_videos = ["G_P4a41i_eM", "p_Y-Z8P_350", "Y3XhF9G7l9M"]
+        # Confirmed real Google Photos tutorial/review/complaint videos (Sept 2026)
+        target_videos = [
+            "sJLrAhhH5sU",  # How to Search in Google Photos [Full Guide 2026]
+            "4DNQp3jgT8c",  # Google Photos: Complete 2025 Guide (Hidden Features)
+            "pRtou8UlXk0",  # How to Search for a Person on Google Photos (tutorial)
+            "5e76aH06NQA",  # Google Photos Just Got Smarter - Ask Photos AI Upgrade
+            "o44v9PZpH-I",  # Google photos not showing all the photos - Fix
+            "zYMtLsAM_hQ",  # How Google Photos actually works
+            "QNBQtgddtTI",  # Google Photos Amazing Features
+        ]
         data = get_youtube_comments(api_key, target_videos)
         save_youtube_comments(data)
     else:
