@@ -1,0 +1,31 @@
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables (CRITICAL)
+.env
+
+# Raw scraped data - generated, not source code
+data/raw/
+data/app_store_reviews.json
+data/play_store_reviews.csv
+
+# Generated database artifacts - rebuilt from source on first run
+data/vectordb/
+data/sqldb/
+data/processed/chroma_db/
+
+# Ignore logs and scratch
+logs/
+scratch/
+.pytest_cache/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
