@@ -25,9 +25,6 @@ collect = [
     "google-play-scraper>=1.2.7",
     "playwright>=1.63.0",
 ]
-dev = [
-    "streamlit>=1.32.0",
-]
 
 [tool.uv]
 override-dependencies = ["requests>=2.31.0"]
