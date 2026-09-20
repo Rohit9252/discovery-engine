@@ -10,10 +10,14 @@ The mechanism chart includes only records with a source-supported mechanism. Rep
 
 Overview and Chat share a 768px breakpoint in `static/style.css`:
 
-- Overview: `.insights-dashboard` collapses to one column and all `.col-span-*` / `.insight-card.wide` spans reset to `grid-column: 1 / -1` so cards stack instead of inventing extra grid tracks. `.verbatims-grid` uses `minmax(0, 1fr)` on narrow viewports (multi-column `auto-fit` from 640px up). Chart wrappers use `.overview-chart` with taller mobile height; Chart.js moves doughnut legends to the bottom and truncates long bar labels under 768px.
+- Overview: `.insights-dashboard` collapses to one column and all `.col-span-*` / `.insight-card.wide` / `.insight-row` spans reset to `grid-column: 1 / -1` so cards stack instead of inventing extra grid tracks. `.insight-row-3` also collapses to one column. `.verbatims-grid` uses `minmax(0, 1fr)` on narrow viewports (multi-column `auto-fit` from 640px up). Chart wrappers use `.overview-chart` with taller mobile height; Chart.js moves doughnut legends to the bottom and truncates long bar labels under 768px.
 - Chat: both `.chat-sidebar` (Suggestion chips) and `.chat-context-panel` (Active Context) are hidden. `#tab-chat .ai-discovery-engine` fills the remaining viewport height. Legacy FAB popup rules at 1024px stay disabled so they do not fight the tab layout.
 - Desktop Chat: `#tab-chat` is sized under the header and tabs with tight padding. `body.chat-tab-active` locks page scroll so only the message list (and side panels if content overflows) scrolls. Overview keeps normal document scrolling.
 
-## Render seed data
+## Discovery Insights tiles
 
-Deploy ships `data/processed/reviews.db` and `data/processed/chroma_db` from git. The Web Service runs `uvicorn src.app.api:app` only. Local pipelines update seed files; Render never recomputes them.
+Overview Discovery Insights includes: Top Discovery Signals, Search Methods, Frustration Severity, Top Failing Entities, Remembered Clues (what users still recall), and Journey Breakdown (which search step failed). Aggregates come from `catalog_snapshot` in `catalog_dashboard.py` using assessment tags already stored in SQLite.
+
+The second insight row (Failing Entities, Remembered Clues, Journey Breakdown) uses a full-width `.insight-row-3` wrapper so the three cards share equal width and do not leave an empty fourth column in the 4-column grid.
+
+Dataset Overview labels use plain product language (Catalog Rows, AI Assessed Rows, Possible Issue Patterns, Possible User Reports). Each stat card and the section title have an info tooltip explaining the metric in plain English.

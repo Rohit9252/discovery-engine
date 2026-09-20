@@ -6,7 +6,7 @@
   <title>Lens - Google Photos Discovery Engine</title>
   <meta name="description" content="Source-linked public-feedback research into Google Photos retrieval and incomplete-memory problems.">
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-  <link rel="stylesheet" href="/static/style.css?v=catalog-34" />
+  <link rel="stylesheet" href="/static/style.css?v=catalog-36" />
   <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -60,22 +60,32 @@
     <!-- Overview Tab -->
     <div id="tab-overview" class="tab-pane active">
       <section class="dataset-overview">
-        <h2 class="section-title">DATASET OVERVIEW</h2>
+        <h2 class="section-title section-title-with-info">
+          DATASET OVERVIEW
+          <div class="tooltip-container">
+            <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="About dataset overview"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div class="tooltip-content tooltip-content-wide">
+              Summary counts for the feedback catalog behind this dashboard. Hover each card's info icon for what that number means.
+            </div>
+          </div>
+        </h2>
         <div class="grid-4">
           <div class="stat-card" style="position: relative;">
             <div class="stat-icon-wrap" style="background: #E8F0FE; color: var(--google-blue);">📋</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-total-reviews">-</div>
-              <div class="stat-label" style="display: flex; align-items: center; gap: 4px;">
-                Phase 1 Catalog Rows
+              <div class="stat-label stat-label-with-info">
+                <span id="stat-total-label">Catalog Rows</span>
                 <div class="tooltip-container">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; color: var(--text-secondary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="About catalog rows"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                   <div class="tooltip-content">
-                    <strong>Data Sources:</strong>
+                    <strong>What this is:</strong>
+                    <p style="margin: 4px 0 8px;">Total feedback rows stored in the catalog.</p>
+                    <strong>Data sources:</strong>
                     <ul style="margin: 4px 0 0; padding-left: 16px;">
                       <li>Online Forums (Reddit)</li>
                       <li>Google Photos Community</li>
-                      <li>App Store & Play Store</li>
+                      <li>App Store &amp; Play Store</li>
                       <li>Web Summaries</li>
                     </ul>
                   </div>
@@ -87,21 +97,45 @@
             <div class="stat-icon-wrap" style="background: #E6F4EA; color: var(--google-green);">✨</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-cleaned">-</div>
-              <div class="stat-label">AI Assessed Rows</div>
+              <div class="stat-label stat-label-with-info">
+                <span id="stat-cleaned-label">AI Assessed Rows</span>
+                <div class="tooltip-container">
+                  <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="About AI assessed rows"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="tooltip-content">
+                    Rows the AI has already tagged for search and memory-retrieval issues.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FEF7E0; color: #E37400;">🧩</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-themes">-</div>
-              <div class="stat-label">Possible Issue Patterns</div>
+              <div class="stat-label stat-label-with-info">
+                <span id="stat-themes-label">Possible Issue Patterns</span>
+                <div class="tooltip-container">
+                  <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="About issue patterns"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="tooltip-content">
+                    Distinct issue themes found across assessed rows, such as faces, dates, or pets.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FCE8E6; color: var(--google-red);">⚠️</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-stages">-</div>
-                <div class="stat-label" id="stat-stages-label">Reported Issue Candidates</div>
+              <div class="stat-label stat-label-with-info">
+                <span id="stat-stages-label">Possible User Reports</span>
+                <div class="tooltip-container">
+                  <svg class="info-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="About possible user reports"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="tooltip-content">
+                    Rows that look like real user-reported search or retrieval problems, not generated scenarios.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -133,10 +167,28 @@
             </div>
           </div>
           
-          <div class="insight-card">
-            <h3>Top Failing Entities</h3>
-            <div class="overview-chart">
-              <canvas id="entitiesChart"></canvas>
+          <div class="insight-row insight-row-3">
+            <div class="insight-card">
+              <h3>Top Failing Entities</h3>
+              <div class="overview-chart">
+                <canvas id="entitiesChart"></canvas>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <h3>Remembered Clues</h3>
+              <p class="insight-subtitle">What people still recall when search fails</p>
+              <div class="overview-chart overview-chart-tall">
+                <canvas id="cluesChart"></canvas>
+              </div>
+            </div>
+
+            <div class="insight-card">
+              <h3>Journey Breakdown</h3>
+              <p class="insight-subtitle">Where in the search flow the problem shows up</p>
+              <div class="overview-chart">
+                <canvas id="journeyChart"></canvas>
+              </div>
             </div>
           </div>
 
@@ -273,7 +325,7 @@
     </div>
   </div>
 
-  <script src="/static/research-status.js?v=catalog-34"></script>
-  <script src="/static/script.js?v=catalog-34"></script>
+  <script src="/static/research-status.js?v=catalog-36"></script>
+  <script src="/static/script.js?v=catalog-36"></script>
 </body>
 </html>

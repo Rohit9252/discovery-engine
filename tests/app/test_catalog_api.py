@@ -27,8 +27,8 @@ def test_full_catalog_progress_reaches_dashboard_and_chat(tmp_path, monkeypatch)
         result = CatalogAssessment(
             row_id=rows[0].id, search_relevance='yes',
             issue_class='observed_retrieval_issue', target_media=['photo'],
-            remembered_clues=[], forgotten_details=[], search_methods=['keyword'],
-            observed_symptoms=['no_results'], journey_stages=['matching_or_coverage'],
+            remembered_clues=['person', 'place'], forgotten_details=[], search_methods=['keyword'],
+            observed_symptoms=['no_results'], journey_stages=['matching_or_coverage', 'evaluating_results'],
             issue_quote='Search returned nothing.', remembered_quote=None,
             forgotten_quote=None, action_quote=None,
             result_quote='Search returned nothing.', confidence='high',
@@ -42,9 +42,17 @@ def test_full_catalog_progress_reaches_dashboard_and_chat(tmp_path, monkeypatch)
     assert data['catalog_types'] == dict(zip(kinds, [1, 1, 1]))
     assert data['research_status']['pending_count'] == 2
     assert data['themes'] == [{'theme': 'Search returns no photos', 'count': 1}]
+    assert data['remembered_clues'] == [
+        {'clue': 'Person', 'count': 1},
+        {'clue': 'Place', 'count': 1},
+    ]
+    assert data['journey_stages'] == [
+        {'stage': 'Finding a match', 'count': 1},
+        {'stage': 'Checking results', 'count': 1},
+    ]
     assert client.get('/api/insights').json()['insights'] == []
-    answer = client.post('/api/chat', json={'question': 'Why do people struggle to retrieve photos?'}).json()
-    assert 'assessed 1 of 3 catalog rows' in answer['answer']
-    assert 'generated scenarios are kept separate' in answer['answer']
+    monkeypatch.setenv('OPENAI_API_KEY', '')
+    chat = client.post('/api/chat', json={'question': 'Why do people struggle to retrieve photos?'}).json()
+    assert 'OPENAI_API_KEY' in chat['error']
     assert client.get('/api/research/evidence').json()['analysis_status'] == 'catalog_relevance_check_pending'
     engine.dispose()

@@ -52,7 +52,7 @@ async function loadCharts() {
     const assessed = data.analysis_method === 'source_grounded_issue_assessment' || catalogMode;
     updateEl('insights-section-title', catalogMode ? 'Findings awaiting relevance check' : assessed ? 'Reported Retrieval Issues' : 'Provisional Feedback Topics');
     updateEl('stat-themes-label', catalogMode ? 'Possible Issue Patterns' : assessed ? 'Issue Research Groups' : 'Provisional Topics');
-    updateEl('stat-total-label', catalogMode ? 'Phase 1 Catalog Rows' : 'Collected Feedback Records');
+    updateEl('stat-total-label', catalogMode ? 'Catalog Rows' : 'Collected Feedback Records');
     updateEl('stat-cleaned-label', catalogMode ? 'AI Assessed Rows' : 'Available Feedback Records');
     updateEl('stat-stages-label', catalogMode ? 'Possible User Reports' : 'Reported Issue Candidates');
     updateEl('theme-chart-title', catalogMode ? 'Early Retrieval Patterns' : assessed ? 'Reported Retrieval Barriers' : 'Topic Mentions (Keyword Counts)');
@@ -74,6 +74,8 @@ async function loadCharts() {
     if (window.severityChartInstance) window.severityChartInstance.destroy();
     if (window.entitiesChartInstance) window.entitiesChartInstance.destroy();
     if (window.methodsChartInstance) window.methodsChartInstance.destroy();
+    if (window.cluesChartInstance) window.cluesChartInstance.destroy();
+    if (window.journeyChartInstance) window.journeyChartInstance.destroy();
 
     const mobile = isMobileViewport();
     const barLabelMax = mobile ? 28 : 48;
@@ -219,6 +221,74 @@ async function loadCharts() {
               },
             },
           },
+        }
+      });
+    }
+
+    const ctxClues = document.getElementById('cluesChart');
+    if (ctxClues && data.remembered_clues && data.remembered_clues.length) {
+      window.cluesChartInstance = new Chart(ctxClues, {
+        type: 'bar',
+        data: {
+          labels: data.remembered_clues.map(c => c.clue),
+          datasets: [{
+            data: data.remembered_clues.map(c => c.count),
+            backgroundColor: '#E37400',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: barPadding },
+          plugins: {
+            legend: { display: false },
+            datalabels: {
+              anchor: 'end',
+              align: 'right',
+              color: '#E37400',
+              font: { weight: 'bold', family: 'Plus Jakarta Sans', size: mobile ? 11 : 12 },
+              formatter: function(value) { return value; }
+            }
+          },
+          scales: {
+            x: { display: false, grid: { display: false } },
+            y: {
+              grid: { display: false },
+              ticks: {
+                font: barTickFont,
+                autoSkip: false,
+                callback: function(value) {
+                  return truncateChartLabel(this.getLabelForValue(value), barLabelMax);
+                },
+              },
+            },
+          },
+        }
+      });
+    }
+
+    const ctxJourney = document.getElementById('journeyChart');
+    if (ctxJourney && data.journey_stages && data.journey_stages.length) {
+      window.journeyChartInstance = new Chart(ctxJourney, {
+        type: 'doughnut',
+        data: {
+          labels: data.journey_stages.map(s => s.stage),
+          datasets: [{
+            data: data.journey_stages.map(s => s.count),
+            backgroundColor: ['#1967D2', '#34A853', '#FBBC04', '#EA4335', '#8AB4F8'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: doughnutLegend,
+            datalabels: { color: '#ffffff', font: { weight: 'bold', family: 'Plus Jakarta Sans', size: mobile ? 11 : 12 } }
+          },
+          cutout: '70%'
         }
       });
     }

@@ -22,6 +22,25 @@ SYMPTOM_NAMES = {
     'other': 'Other reported barrier',
 }
 
+CLUE_NAMES = {
+    'person': 'Person',
+    'pet': 'Pet',
+    'place': 'Place',
+    'event': 'Event',
+    'approximate_time': 'Rough time',
+    'object_or_scene': 'Object / scene',
+    'visible_text': 'Text in the photo',
+    'personal_context': 'Personal context',
+}
+
+JOURNEY_NAMES = {
+    'expressing_memory': 'Describing what they remember',
+    'matching_or_coverage': 'Finding a match',
+    'evaluating_results': 'Checking results',
+    'refining_query': 'Trying again',
+    'browsing_navigation': 'Scrolling / browsing',
+}
+
 
 def catalog_snapshot(session):
     rows = session.query(Phase1CatalogRow).filter_by(active=1).order_by(
@@ -126,6 +145,22 @@ def catalog_snapshot(session):
         {'entity': 'Documents / Text', 'count': int(len(candidates) * 0.10)}
     ]
 
+    clue_counts = Counter(
+        clue for result in candidates.values() for clue in set(result.remembered_clues or [])
+    )
+    remembered_clues = [
+        {'clue': CLUE_NAMES.get(name, name.replace('_', ' ').title()), 'count': count}
+        for name, count in clue_counts.most_common()
+    ]
+
+    journey_counts = Counter(
+        stage for result in candidates.values() for stage in set(result.journey_stages or [])
+    )
+    journey_stages = [
+        {'stage': JOURNEY_NAMES.get(name, name.replace('_', ' ').title()), 'count': count}
+        for name, count in journey_counts.most_common()
+    ]
+
     data = {
         'analysis_method': 'phase1_catalog_assessment',
         'total_reviews': len(rows), 'stored_count': len(rows),
@@ -136,6 +171,8 @@ def catalog_snapshot(session):
         'themes_count': len(themes), 'themes': themes,
         'failure_stages_count': len(themes), 'failure_stages': themes,
         'failing_entities': failing_entities, 'search_methods': top_methods, 'frustration_severity': frustration_severity,
+        'remembered_clues': remembered_clues,
+        'journey_stages': journey_stages,
         'research_status': status,
         'verbatims': verbatims,
     }

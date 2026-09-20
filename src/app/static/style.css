@@ -185,10 +185,23 @@ body.chat-tab-active .container {
 .stat-info { display: flex; flex-direction: column; }
 .stat-value { font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
 .stat-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); position: relative; }
+.stat-label-with-info { display: flex; align-items: center; gap: 4px; }
+.section-title-with-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.info-icon {
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.info-icon:hover { color: var(--text-primary); }
 
 /* Tooltip Styles */
 .tooltip-container { position: relative; display: flex; align-items: center; }
-.tooltip-content { display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; width: 220px; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 12px; font-size: 12px; color: var(--text-primary); z-index: 100; font-weight: normal; }
+.tooltip-content { display: none; position: absolute; top: 100%; left: 0; margin-top: 8px; width: 220px; background: white; border: 1px solid var(--border-light); border-radius: var(--radius-md); box-shadow: var(--shadow-md); padding: 12px; font-size: 12px; color: var(--text-primary); z-index: 100; font-weight: normal; line-height: 1.4; }
+.tooltip-content-wide { width: 260px; }
 .tooltip-container:hover .tooltip-content { display: block; }
 
 /* Top Discovery Insights */
@@ -196,7 +209,7 @@ body.chat-tab-active .container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 .col-span-4 {
   grid-column: span 4;
@@ -491,7 +504,17 @@ body:not(.chat-tab-active) #tab-chat.tab-pane.active {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+}
+.insight-row {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.insight-row-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
 }
 .insight-card {
   background: white;
@@ -502,6 +525,8 @@ body:not(.chat-tab-active) #tab-chat.tab-pane.active {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
+  height: 100%;
 }
 .insight-card.wide {
   grid-column: 1 / -1;
@@ -515,6 +540,12 @@ body:not(.chat-tab-active) #tab-chat.tab-pane.active {
   align-items: center;
   gap: 8px;
 }
+.insight-subtitle {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
 .insight-card.highlight {
   border-top: 4px solid var(--google-blue);
 }
@@ -523,6 +554,11 @@ body:not(.chat-tab-active) #tab-chat.tab-pane.active {
   width: 100%;
   min-width: 0;
   position: relative;
+  flex: 1;
+}
+.overview-chart-tall {
+  min-height: 280px;
+  height: 280px;
 }
 
 /* Source Progress Bars */
@@ -738,10 +774,14 @@ body:not(.chat-tab-active) #tab-chat.tab-pane.active {
   .grid-4, .grid-2, .hero-columns, .analytics-dashboard, .insights-dashboard {
     grid-template-columns: minmax(0, 1fr);
   }
+  .insight-row-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .insights-dashboard .col-span-2,
   .insights-dashboard .col-span-3,
   .insights-dashboard .col-span-4,
-  .insight-card.wide {
+  .insight-card.wide,
+  .insight-row {
     grid-column: 1 / -1;
   }
   .insight-card {
