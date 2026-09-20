@@ -50,7 +50,28 @@ def favicon():
 
 @app.get('/api/health')
 def health():
-    return {'app': 'discovery-engine', 'version': 'baseline-1', 'database': str(REVIEW_DATABASE)}
+    import os
+    db_exists = REVIEW_DATABASE.exists()
+    catalog_rows = 0
+    db_error = None
+    if db_exists:
+        engine = get_engine()
+        try:
+            with get_session(engine) as session:
+                catalog_rows = session.query(Phase1CatalogRow).filter_by(active=1).count()
+        except Exception as exc:
+            db_error = str(exc)
+        finally:
+            engine.dispose()
+    return {
+        'app': 'discovery-engine',
+        'version': 'baseline-1',
+        'database': str(REVIEW_DATABASE),
+        'database_exists': db_exists,
+        'catalog_rows': catalog_rows,
+        'openai_configured': bool(os.getenv('OPENAI_API_KEY')),
+        'db_error': db_error,
+    }
 
 
 def dashboard_response(section):
@@ -112,6 +133,18 @@ def get_retrieval_evidence(category: Literal['all', 'direct_memory_issue', 'retr
 
 @app.post('/api/chat')
 def chat(request: ChatRequest):
+    import os
+    if not os.getenv('OPENAI_API_KEY'):
+        return JSONResponse({
+            'error': 'Chat is unavailable because OPENAI_API_KEY is not set on the server. Add it in Render Environment and redeploy.',
+            'sources': [],
+        }, status_code=503)
+    if not REVIEW_DATABASE.exists():
+        return JSONResponse({
+            'error': f'Project database file is missing at {REVIEW_DATABASE}. Confirm reviews.db is on main and redeploy.',
+            'sources': [],
+        }, status_code=503)
+
     engine = get_engine()
     try:
         from src.process.issue_chat import answer_issue_question
@@ -120,8 +153,13 @@ def chat(request: ChatRequest):
                 from src.process.catalog_chat import answer_catalog_question
                 return answer_catalog_question(session, request.question)
             return answer_issue_question(session, request.question)
-    except Exception:
+    except Exception as exc:
         logger.exception('Research chat failed')
-        return JSONResponse({'error': 'Issue evidence search is unavailable. Check the project database.', 'sources': []}, status_code=503)
+        message = str(exc)
+        if 'api_key' in message.lower() or 'authentication' in message.lower() or 'unauthorized' in message.lower():
+            detail = 'OpenAI rejected the API key. Check OPENAI_API_KEY in Render Environment.'
+        else:
+            detail = f'Issue evidence search is unavailable. Check the project database. ({type(exc).__name__}: {message[:180]})'
+        return JSONResponse({'error': detail, 'sources': []}, status_code=503)
     finally:
         engine.dispose()
