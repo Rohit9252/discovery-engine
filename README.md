@@ -128,11 +128,13 @@ You do **not** need YouTube/Gemini keys, Persistent Disk, Postgres, or Redis for
 | --- | --- |
 | Branch | `main` |
 | Runtime | Python 3 |
-| Build Command | `pip install uv && uv pip install --system -r requirements.txt --override requests>=2.31.0` |
+| Build Command | `pip install -r requirements-render.txt` |
 | Start Command | `uvicorn src.app.api:app --host 0.0.0.0 --port $PORT` |
 | Auto-Deploy | On |
 
-`Procfile` and `render.yaml` target **`main` only**. Use the build command above (not plain `pip install -r requirements.txt`) so Render accepts the same `requests` override used locally. Collectors are not started on Render; seed data (`reviews.db` + `chroma_db`) is already in `main` and deploys with the code automatically.
+`Procfile` and `render.yaml` target **`main` only**.
+
+**Important:** In the Render dashboard, set Build Command to `pip install -r requirements-render.txt` (not `requirements.txt`). The full `requirements.txt` includes `app-store-scraper`, which demands an old `requests` version and breaks Render's pip resolver. `requirements-render.txt` is the web/chat runtime only - collectors stay local. Seed data (`reviews.db` + `chroma_db`) is already on `main` and deploys with the code automatically.
 
 3. Environment → add `OPENAI_API_KEY` (required). Optional: `PYTHON_VERSION=3.11.9`.
 4. Deploy, open the Render URL, confirm Overview stats load and Chat answers a question.
