@@ -12,9 +12,9 @@ def test_clean_and_store_play_store(tmp_path):
     
     # Mock raw JSON data with typical scraping issues
     raw_data = [
-        {"reviewId": "1", "content": "Great app!", "score": 5, "userName": "User A", "at": "2023-01-01T00:00:00"},
+        {"reviewId": "1", "content": "Great app for my daily photos", "score": 5, "userName": "User A", "at": "2023-01-01T00:00:00"},
         {"reviewId": "2", "content": "Keeps crashing", "score": 1, "userName": "User B", "at": "2023-01-02T00:00:00"},
-        {"reviewId": "1", "content": "Great app!", "score": 5, "userName": "User A", "at": "2023-01-01T00:00:00"}, # Duplicate ID
+        {"reviewId": "1", "content": "Great app for my daily photos", "score": 5, "userName": "User A", "at": "2023-01-01T00:00:00"}, # Duplicate ID
         {"reviewId": "3", "content": None, "score": 3, "userName": "User C", "at": "2023-01-03T00:00:00"}, # Missing text
     ]
     
@@ -29,7 +29,7 @@ def test_clean_and_store_play_store(tmp_path):
     
     # Verify column mapping logic
     review1 = session.query(ReviewMetadata).filter_by(id="1").first()
-    assert review1.text == "Great app!"
+    assert review1.text == "Great app for my daily photos"
     assert review1.rating == 5.0
     assert review1.source == "play_store"
     assert review1.author == "User A"

@@ -1,5 +1,8 @@
 # Virtual environments
 .venv/
+.venv-312/
+.uv-cache/
+.uv-python/
 venv/
 env/
 
@@ -16,10 +19,22 @@ data/raw/
 data/app_store_reviews.json
 data/play_store_reviews.csv
 
-# Generated database artifacts - rebuilt from source on first run
+# Generated / local-only database artifacts
 data/vectordb/
 data/sqldb/
-data/processed/chroma_db/
+
+# Seed data shipped for deploy (DO track these):
+#   data/processed/reviews.db
+#   data/processed/chroma_db/
+# Local compute updates these files; Render serves them as-is (never recomputes).
+
+# Backup / scratch DBs - do not commit
+data/processed/reviews-old*.db
+data/processed/reviews-before*.db
+data/processed/reviews_oss.db
+data/processed/*-awaiting-verification.db
+data/processed/dashboard_insights.json
+data/research/
 
 # Ignore logs and scratch
 logs/
@@ -29,3 +44,7 @@ scratch/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+data/logs/
+
+data/collection-runs/
