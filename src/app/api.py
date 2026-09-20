@@ -134,11 +134,14 @@ def get_retrieval_evidence(category: Literal['all', 'direct_memory_issue', 'retr
 @app.post('/api/chat')
 def chat(request: ChatRequest):
     import os
-    if not os.getenv('OPENAI_API_KEY'):
+    api_key = (os.getenv('OPENAI_API_KEY') or '').strip().strip('"').strip("'")
+    if not api_key:
         return JSONResponse({
             'error': 'Chat is unavailable because OPENAI_API_KEY is not set on the server. Add it in Render Environment and redeploy.',
             'sources': [],
         }, status_code=503)
+    # Ensure downstream ChatOpenAI sees a clean key (no quotes/whitespace from dashboard paste).
+    os.environ['OPENAI_API_KEY'] = api_key
     if not REVIEW_DATABASE.exists():
         return JSONResponse({
             'error': f'Project database file is missing at {REVIEW_DATABASE}. Confirm reviews.db is on main and redeploy.',
@@ -156,8 +159,13 @@ def chat(request: ChatRequest):
     except Exception as exc:
         logger.exception('Research chat failed')
         message = str(exc)
-        if 'api_key' in message.lower() or 'authentication' in message.lower() or 'unauthorized' in message.lower():
-            detail = 'OpenAI rejected the API key. Check OPENAI_API_KEY in Render Environment.'
+        lower = message.lower()
+        if 'api_key' in lower or 'authentication' in lower or 'unauthorized' in lower or 'incorrect api key' in lower or 'invalid_api_key' in lower:
+            detail = (
+                'OpenAI rejected the API key. In Render Environment, open OPENAI_API_KEY, '
+                'remove any quotes or spaces, confirm it is a valid sk- key from platform.openai.com, '
+                'save, then Manual Deploy again.'
+            )
         else:
             detail = f'Issue evidence search is unavailable. Check the project database. ({type(exc).__name__}: {message[:180]})'
         return JSONResponse({'error': detail, 'sources': []}, status_code=503)

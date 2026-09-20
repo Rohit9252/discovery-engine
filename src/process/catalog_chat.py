@@ -27,7 +27,11 @@ STOPWORDS = {
 
 
 def get_llm():
-    return ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    import os
+    api_key = (os.getenv('OPENAI_API_KEY') or '').strip().strip('"').strip("'")
+    if not api_key:
+        raise ValueError('OPENAI_API_KEY is missing')
+    return ChatOpenAI(model='gpt-4o-mini', temperature=0, api_key=api_key)
 
 
 def source_entry(index, key, result, source):
