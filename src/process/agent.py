@@ -394,6 +394,7 @@ def run_agent(question: str) -> dict:
             "source_label":  doc.get("source_label", "Unknown"),
             "failure_stage": doc.get("failure_stage", ""),
             "snippet":       doc["text"][:160] + ("..." if len(doc["text"]) > 160 else ""),
+            "full_text":     doc["text"],
             "url":           doc.get("url"),
             "author":        doc.get("author"),
             "relevance":     relevance,

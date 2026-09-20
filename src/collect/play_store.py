@@ -2,11 +2,13 @@ from google_play_scraper import reviews, Sort
 import json
 import logging
 from pathlib import Path
+import time
+from src.collect.storage import save_records
 
 # Setup standard logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def scrape_play_store_reviews(app_id="com.google.android.apps.photos", lang='en', country='us', count=1000):
+def scrape_play_store_reviews(app_id="com.google.android.apps.photos", lang='en', country='us', count=1000, receipt=None):
     """
     Scrape recent reviews from Google Play Store.
     
@@ -20,20 +22,38 @@ def scrape_play_store_reviews(app_id="com.google.android.apps.photos", lang='en'
         list: A list of dictionaries containing review data.
     """
     logging.info(f"Starting scraping for Play Store app: {app_id} (Target: {count} reviews)")
-    try:
-        result, continuation_token = reviews(
-            app_id,
-            lang=lang,
-            country=country,
-            sort=Sort.NEWEST,
-            count=count,
-            filter_score_with=None # Get all scores to find pain points regardless of star rating
-        )
-        logging.info(f"Successfully scraped {len(result)} reviews.")
-        return result
-    except Exception as e:
-        logging.error(f"Error scraping Play Store: {e}")
-        return []
+    receipt = receipt if receipt is not None else {}
+    receipt.setdefault('errors', [])
+    collected = {}
+    continuation_token = None
+    while len(collected) < count:
+        result = None
+        for attempt in range(3):
+            try:
+                options = dict(lang=lang, country=country, sort=Sort.NEWEST,
+                               count=min(200, count-len(collected)), filter_score_with=None)
+                if continuation_token is not None:
+                    options['continuation_token'] = continuation_token
+                result, next_token = reviews(app_id, **options)
+                break
+            except Exception as exc:
+                if attempt == 2:
+                    receipt['errors'].append({'country':country,'error_type':type(exc).__name__})
+                else:
+                    time.sleep(2 ** attempt)
+        if result is None:
+            break
+        before = len(collected)
+        for row in result:
+            enriched = {**row, 'app_id':app_id, 'country':country, 'language':lang,
+                        'product_context_verified':True}
+            from src.collect.storage import record_key
+            collected[record_key(row)] = enriched
+        if not result or len(collected) == before or next_token is None:
+            break
+        continuation_token = next_token
+    receipt['coverage'] = 'Recent reviews across all star ratings; no server-side keyword filtering.'
+    return list(collected.values())
 
 def save_reviews(reviews_data, output_file="data/raw/play_store_reviews.json"):
     """
@@ -43,27 +63,5 @@ def save_reviews(reviews_data, output_file="data/raw/play_store_reviews.json"):
         reviews_data (list): The list of review dictionaries.
         output_file (str): The path to the output JSON file.
     """
-    if not reviews_data:
-        logging.warning("No data provided to save.")
-        return
-    
-    # Ensure the parent directory exists
-    output_path = Path(output_file)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Convert datetime objects to ISO strings for JSON serialization
-    for review in reviews_data:
-        if 'at' in review and review['at']:
-            review['at'] = review['at'].isoformat()
-        if 'repliedAt' in review and review['repliedAt']:
-            review['repliedAt'] = review['repliedAt'].isoformat()
-            
-    with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(reviews_data, f, ensure_ascii=False, indent=2)
-        
-    logging.info(f"Saved {len(reviews_data)} reviews to {output_file}")
+    return save_records(reviews_data, output_file)
 
-if __name__ == "__main__":
-    # When run directly, scrape a sample size
-    data = scrape_play_store_reviews(count=200)
-    save_reviews(data)

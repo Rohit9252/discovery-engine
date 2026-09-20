@@ -15,6 +15,9 @@ import json
 import logging
 import time
 from pathlib import Path
+import hashlib
+from src.collect.http_client import get_json, CollectionError
+from src.collect.storage import save_records
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,7 +62,7 @@ def scrape_via_library(count: int = TARGET) -> list[dict]:
 # Fallback: iTunes RSS feed (no scraping, Apple's own public feed)
 # ---------------------------------------------------------------------------
 
-def scrape_via_rss(pages: int = 10) -> list[dict]:
+def scrape_via_rss(pages: int = 10, country: str = COUNTRY, receipt=None) -> list[dict]:
     """
     Fetch reviews via Apple's public iTunes RSS feed.
     Returns up to pages*50 reviews (50 per page, max 10 pages = 500 reviews).
@@ -68,21 +71,18 @@ def scrape_via_rss(pages: int = 10) -> list[dict]:
     import requests
 
     reviews = []
+    receipt = receipt if receipt is not None else {}
+    receipt.setdefault('errors', [])
+    seen = set()
     logging.info("Falling back to iTunes RSS API ...")
 
     for page in range(1, pages + 1):
         url = (
-            f"https://itunes.apple.com/{COUNTRY}/rss/customerreviews/"
+            f"https://itunes.apple.com/{country}/rss/customerreviews/"
             f"page={page}/id={APP_ID}/sortby=mostrecent/json"
         )
         try:
-            resp = requests.get(
-                url,
-                headers={"User-Agent": "Mozilla/5.0"},
-                timeout=15,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+            data = get_json(url)
 
             entries = data.get("feed", {}).get("entry", [])
             if not entries:
@@ -95,6 +95,9 @@ def scrape_via_rss(pages: int = 10) -> list[dict]:
                     continue
 
                 review_id = entry.get("id", {}).get("label", f"rss_{page}_{len(reviews)}")
+                if review_id in seen:
+                    continue
+                seen.add(review_id)
                 reviews.append({
                     "id":      review_id,
                     "title":   entry.get("title", {}).get("label", ""),
@@ -103,13 +106,18 @@ def scrape_via_rss(pages: int = 10) -> list[dict]:
                     "author":  entry.get("author", {}).get("name", {}).get("label", "Anonymous"),
                     "date":    entry.get("updated", {}).get("label", ""),
                     "version": entry.get("im:version", {}).get("label", ""),
+                    "country": country,
+                    "app_id": APP_ID,
+                    "url": f"https://apps.apple.com/{country}/app/id{APP_ID}",
+                    "url_scope": "app_page",
+                    "product_context_verified": True,
                 })
 
             logging.info("Page %d: %d total reviews so far.", page, len(reviews))
             time.sleep(0.5)
 
         except Exception as exc:
-            logging.error("RSS page %d failed: %s", page, exc)
+            receipt['errors'].append({'country':country,'page':page,'error':str(exc) if isinstance(exc, CollectionError) else type(exc).__name__})
             break
 
     return reviews
@@ -140,7 +148,12 @@ def normalize(reviews: list[dict], source: str) -> list[dict]:
             continue
 
         normalized.append({
-            "id":     str(r.get("id", f"ios_{len(normalized)}")),
+            "id": str(r.get("id") or hashlib.sha256((date + title + text).encode()).hexdigest()),
+            "app_id": APP_ID,
+            "country": r.get("country", COUNTRY),
+            "url": r.get("url") or f"https://apps.apple.com/{COUNTRY}/app/id{APP_ID}",
+            "url_scope": "app_page",
+            "product_context_verified": True,
             "title":  title,
             "review": text,
             "rating": rating,
@@ -155,33 +168,9 @@ def normalize(reviews: list[dict], source: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 def save_reviews(reviews: list[dict], output_file: str = "data/raw/app_store_reviews.json") -> None:
-    if not reviews:
-        logging.warning("No App Store data to save.")
-        return
-    out = Path(output_file)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(reviews, f, ensure_ascii=False, indent=2)
-    logging.info("Saved %d App Store reviews to %s", len(reviews), output_file)
-
+    return save_records(reviews, output_file)
 
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    logging.info("=== App Store Collector Start ===")
-
-    # Try library first
-    raw = scrape_via_library(count=TARGET)
-    if raw:
-        reviews = normalize(raw, "library")
-        logging.info("Library path: %d reviews normalized.", len(reviews))
-    else:
-        # Fallback to iTunes RSS
-        raw = scrape_via_rss(pages=6)
-        reviews = normalize(raw, "rss")
-        logging.info("RSS path: %d reviews normalized.", len(reviews))
-
-    save_reviews(reviews)
-    logging.info("=== App Store Collector Done ===")

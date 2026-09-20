@@ -50,3 +50,14 @@ def test_save_reviews(tmp_path):
     assert len(data) == 1
     assert data[0]['content'] == "Test review"
     assert data[0]['at'] == "2023-01-01T12:00:00"
+
+
+@patch('src.collect.play_store.reviews')
+def test_continuation_token_is_consumed(mock_reviews):
+    mock_reviews.side_effect = [
+        ([{'reviewId':str(i),'content':'Google Photos search'} for i in range(200)], 'next'),
+        ([{'reviewId':'200','content':'Search is broken'}],None),
+    ]
+    result = scrape_play_store_reviews(count=201)
+    assert len(result) == 201
+    assert mock_reviews.call_args_list[1].kwargs['continuation_token'] == 'next'

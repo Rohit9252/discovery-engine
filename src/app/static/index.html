@@ -4,10 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lens - Google Photos Discovery Engine</title>
-  <meta name="description" content="AI-powered PM research tool analyzing 400+ real user reviews to surface Google Photos discovery failures and feature opportunities.">
-  <link rel="stylesheet" href="/static/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <meta name="description" content="Source-linked public-feedback research into Google Photos retrieval and incomplete-memory problems.">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="/static/style.css?v=catalog-34" />
   <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 </head>
 <body>
   <header class="header">
@@ -48,185 +50,230 @@
     </div>
   </header>
 
-  <main class="container split-layout">
-    <div class="left-pane">
-      <!-- Dataset Overview -->
+  <!-- Tab Navigation -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview Stats</button>
+    <button class="tab-btn" onclick="switchTab('chat')">Chat</button>
+  </div>
+
+  <main class="container">
+    <!-- Overview Tab -->
+    <div id="tab-overview" class="tab-pane active">
       <section class="dataset-overview">
-        <h2 class="section-title">Dataset Overview</h2>
+        <h2 class="section-title">DATASET OVERVIEW</h2>
         <div class="grid-4">
-          <div class="stat-card">
+          <div class="stat-card" style="position: relative;">
             <div class="stat-icon-wrap" style="background: #E8F0FE; color: var(--google-blue);">📋</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-total-reviews">-</div>
-              <div class="stat-label">Total Reviews Analyzed</div>
+              <div class="stat-label" style="display: flex; align-items: center; gap: 4px;">
+                Phase 1 Catalog Rows
+                <div class="tooltip-container">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; color: var(--text-secondary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <div class="tooltip-content">
+                    <strong>Data Sources:</strong>
+                    <ul style="margin: 4px 0 0; padding-left: 16px;">
+                      <li>Online Forums (Reddit)</li>
+                      <li>Google Photos Community</li>
+                      <li>App Store & Play Store</li>
+                      <li>Web Summaries</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #E6F4EA; color: var(--google-green);">✨</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-cleaned">-</div>
-              <div class="stat-label">Cleaned Reviews</div>
+              <div class="stat-label">AI Assessed Rows</div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FEF7E0; color: #E37400;">🧩</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-themes">-</div>
-              <div class="stat-label">Synthesized Themes</div>
+              <div class="stat-label">Possible Issue Patterns</div>
             </div>
           </div>
           <div class="stat-card">
             <div class="stat-icon-wrap" style="background: #FCE8E6; color: var(--google-red);">⚠️</div>
             <div class="stat-info">
               <div class="stat-value" id="stat-stages">-</div>
-              <div class="stat-label">Core Failure Stages</div>
+                <div class="stat-label" id="stat-stages-label">Reported Issue Candidates</div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Top Discovery Insights -->
+      <!-- Insight Components -->
       <section class="top-insights mt-4">
-        <h2 class="section-title">Top Discovery Insights</h2>
-        <div id="insights-grid" class="grid-2"></div>
-      </section>
-
-      <!-- Strongest Signal -->
-      <section class="strongest-signal mt-4">
-        <div class="hero-card">
-          <div class="hero-header">
-             <div class="hero-icon">🚨</div>
-             <div class="hero-title">
-               <h3>Contextual & Temporal Search Failures</h3>
-               <p>Extracted from <span id="hero-count">...</span> reviews across <span id="hero-sources">...</span> sources • Primary driver of query abandonment</p>
-             </div>
-          </div>
-          <div class="hero-columns">
-            <div class="hero-col pain-points">
-              <h4>PAIN POINTS</h4>
-              <ul>
-                <li>Inconsistent OCR for receipts and screenshots</li>
-                <li>Loss of album structure during device transfer</li>
-                <li>Endless scrolling for multi-attribute temporal queries</li>
-              </ul>
-            </div>
-            <div class="hero-col opportunities">
-              <h4>PM OPPORTUNITIES</h4>
-              <ul>
-                <li>Integrate advanced semantic search (concept-based)</li>
-                <li>Auto-categorize receipts and screenshots instantly</li>
-                <li>Smart album reconstruction based on location/time density</li>
-              </ul>
+        <h2 class="section-title">Discovery Insights</h2>
+        <div class="insights-dashboard">
+          
+          <div class="insight-card highlight col-span-2">
+            <h3>Top Discovery Signals</h3>
+            <div class="overview-chart">
+              <canvas id="signalsChart"></canvas>
             </div>
           </div>
-        </div>
-      </section>
+          <div class="insight-card">
+            <h3>Search Methods Attempted</h3>
+            <div class="overview-chart">
+              <canvas id="methodsChart"></canvas>
+            </div>
+          </div>
 
-      <!-- Analytics Dashboard -->
-      <section class="analytics-dashboard mt-4">
-        <div class="card chart-card">
-          <div class="chart-header-row">
-            <h2>Failure Stages in Retrieval Funnel</h2>
-            <div class="warning-badge-sm"><span class="icon">⚠️</span> 62% of failed sessions involve multi-attribute queries</div>
-          </div>
-          <div class="chart-container">
-            <canvas id="stageChart"></canvas>
-          </div>
-        </div>
-        <div class="card chart-card">
-          <div class="chart-header-row">
-            <h2>Top Pain Point Themes (Severity & Frequency)</h2>
-            <span class="card-footer-sm" id="chart-n-label">Loading...</span>
-          </div>
-          <div class="chart-container">
-            <canvas id="themeChart"></canvas>
-          </div>
-        </div>
-      </section>
 
-      <!-- Pipeline Architecture -->
-      <section class="pipeline-architecture mt-4">
-        <h2 class="section-title">Pipeline Architecture</h2>
-        <div class="pipeline-flow">
-          <div class="pipe-step"><div class="pipe-icon" style="background:#e8eaed;">📥</div><div class="pipe-text"><strong>Step 1</strong><br>Ingest</div></div>
-          <div class="pipe-arrow">→</div>
-          <div class="pipe-step"><div class="pipe-icon" style="background:#E6F4EA;">🧹</div><div class="pipe-text"><strong>Step 2</strong><br>Clean</div></div>
-          <div class="pipe-arrow">→</div>
-          <div class="pipe-step"><div class="pipe-icon" style="background:#E8F0FE;">🧠</div><div class="pipe-text"><strong>Step 3</strong><br>Embed</div></div>
-          <div class="pipe-arrow">→</div>
-          <div class="pipe-step"><div class="pipe-icon" style="background:#FCE8E6;">🗄️</div><div class="pipe-text"><strong>Step 4</strong><br>Store</div></div>
-          <div class="pipe-arrow">→</div>
-          <div class="pipe-step"><div class="pipe-icon" style="background:#F3E8FD;">🤖</div><div class="pipe-text"><strong>Step 5</strong><br>Synthesize</div></div>
+          <div class="insight-card">
+            <h3>User Frustration Severity</h3>
+            <div class="overview-chart">
+              <canvas id="severityChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="insight-card">
+            <h3>Top Failing Entities</h3>
+            <div class="overview-chart">
+              <canvas id="entitiesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="insight-card wide col-span-4">
+            <h3>What Users Are Saying</h3>
+            <div id="verbatims-list" class="verbatims-grid">
+              <p class="placeholder-text">User feedback examples will appear after the relevance check.</p>
+            </div>
+          </div>
+
         </div>
       </section>
     </div>
 
-    <div class="right-pane">
-      <!-- AI Discovery Engine Interface -->
-      <section class="ai-discovery-engine">
-      <div class="chat-header chat-header-blue">
-        <div class="chat-title">
-          <div class="agent-avatar-sm">AI</div>
-          <h2>AI Photo Insights Chat</h2>
-        </div>
-        <div class="chat-actions">
-          <button class="chat-icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          </button>
-          <button class="chat-icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-          </button>
-          <button class="chat-icon-btn" id="close-chat-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="chat-messages" id="chat-messages">
-        <!-- Messages will appear here -->
-        <div class="message assistant welcome-msg" id="welcome-msg">
-          <div class="avatar sparkle">✨</div>
-          <div class="bubble">
-            <strong>Welcome to the Discovery Engine.</strong> I can synthesize user research, analyze failure stages, and provide direct quotes from participants. What would you like to explore?
-          </div>
-        </div>
-      </div>
-
-      <!-- Suggestions -->
-      <div class="suggestions" id="suggestions">
-        <div class="suggestions-label">
-          <span class="sparkle-icon-sm" style="font-size: 14px;">✨</span> Suggested Questions
-        </div>
-        <button class="suggestion-chip" onclick="sendSuggestion(this)">What kinds of old photos do users struggle to retrieve?</button>
-        <button class="suggestion-chip" onclick="sendSuggestion(this)">Compare natural language queries vs keyword searches</button>
-        <button class="suggestion-chip" onclick="sendSuggestion(this)">How do users describe unorganized vacation albums?</button>
-        <button class="suggestion-chip" onclick="sendSuggestion(this)">Synthesize emotional drop-off when search yields 0 results</button>
-        <button class="suggestion-chip" onclick="sendSuggestion(this)">Recommend top 3 heuristic fixes for temporal filters</button>
-      </div>
-
-      <!-- Chat Input Bar -->
-      <div class="chat-input-wrapper">
-        <div class="chat-input-container">
-          <div class="input-ai-icon" style="padding: 0 4px; display: flex; align-items: center;">
-            <span class="sparkle-icon-sm">✨</span>
-          </div>
-          <input type="text" id="chat-input" placeholder="Ask AI Discovery Engine about user research findings, verbatim quotes..." autocomplete="off" />
-          <button id="send-btn" title="Send Query">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--google-blue); margin-left: 2px; margin-top: 2px;">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </section>
-    </div>
   </main>
-  
-  <div class="chat-fab" id="chat-fab" title="Open AI Discovery Engine">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+
+  <!-- Chat Tab (Full Width) -->
+    <div id="tab-chat" class="tab-pane">
+      <div class="chat-layout">
+        <!-- Sidebar -->
+        <aside class="chat-sidebar">
+          <h3 class="sidebar-title">
+            <svg class="sidebar-title-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 18h6"></path>
+              <path d="M10 22h4"></path>
+              <path d="M12 2a7 7 0 0 0-4 12.7V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.3A7 7 0 0 0 12 2z"></path>
+            </svg>
+            Suggestion
+          </h3>
+          <p>Quick queries to filter the research catalog:</p>
+                    <div class="suggestion-chips">
+            <button class="chip" onclick="sendSuggestion(this.textContent)">What are the major issues while retrieving photos?</button>
+            <button class="chip" onclick="sendSuggestion(this.textContent)">How many such retrieval issues are there?</button>
+            <button class="chip" onclick="sendSuggestion(this.textContent)">What are the most common search methods attempted?</button>
+            <button class="chip" onclick="sendSuggestion(this.textContent)">Are users failing to retrieve specific entities?</button>
+            <button class="chip" onclick="sendSuggestion(this.textContent)">Why are users frustrated when searching?</button>
+            <button class="chip" onclick="sendSuggestion(this.textContent)">How does memory decay impact retrieval?</button>
+          </div>
+        </aside>
+
+        <!-- Main Chat -->
+        <section class="ai-discovery-engine">
+        <div class="chat-messages" id="chat-messages">
+          <div class="message assistant welcome-msg" id="welcome-msg">
+            <div class="avatar sparkle"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--google-blue)"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/></svg></div>
+            <div class="bubble">
+              <strong>Hello! I'm Lens. 🔍</strong><br><br>I've analyzed thousands of user feedback records across Reddit, App Store, and the Web to understand how people struggle with Google Photos search and memory retrieval.<br><br>What insights would you like to uncover today?
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-wrapper">
+          <div class="chat-suggestions" id="suggestions"></div>
+          <div class="chat-input-container">
+            <textarea id="chat-input" placeholder="Ask about user memory issues or retrieval barriers... (Shift+Enter for newline)" rows="1"></textarea>
+            <button class="icon-btn send-btn" id="send-btn" title="Send message">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+        </section>
+        
+        <!-- Active Context Panel -->
+        <aside class="chat-context-panel">
+          <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin-bottom: 24px; font-weight: 700;">Active Context</h3>
+          
+          <div style="margin-bottom: 24px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Data Sources</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span style="background: #E8F0FE; color: var(--google-blue); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Reddit</span>
+              <span style="background: #E8F0FE; color: var(--google-blue); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">App Store</span>
+              <span style="background: #E8F0FE; color: var(--google-blue); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Web</span>
+              <span style="background: #E8F0FE; color: var(--google-blue); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Google Community</span>
+              <span style="background: #E8F0FE; color: var(--google-blue); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">Playstore</span>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 24px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Records Being Analyzed</div>
+            <div id="context-total-records" style="font-size: 24px; color: var(--text-primary); font-weight: 700;">3,000</div>
+          </div>
+          
+          <div style="margin-bottom: 24px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Confidence Level</div>
+            <div style="font-size: 16px; color: var(--google-green); font-weight: 600; display: flex; align-items: center; gap: 6px;">
+              <span style="display: inline-block; width: 8px; height: 8px; background: var(--google-green); border-radius: 50%;"></span>
+              High (AI Extracted)
+            </div>
+          </div>
+
+          <div style="margin-top: auto; padding-top: 24px; border-top: 1px solid var(--border-light); font-size: 12px; color: var(--text-secondary); line-height: 1.5;">
+            Lens Engine is actively connected to the verified catalog data.
+          </div>
+        </aside>
+      </div>
+    </div>
+  <!-- Instruction Modal Popup -->
+  <div class="modal-overlay hidden" id="instruction-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-logo">
+          <span style="color: var(--google-blue); font-weight: bold; font-size: 24px;">Lens</span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <h2>Welcome to Discovery Engine</h2>
+        <p>Let's explore insight together. Follow these quick steps to get started.</p>
+        
+        <ul class="modal-steps">
+          <li>
+            <div class="step-icon" style="background: #E8F0FE; color: var(--google-blue);">🔍</div>
+            <div class="step-text"><strong>Explore Stats:</strong> Review the core findings and metrics on the Overview tab.</div>
+          </li>
+          <li>
+            <div class="step-icon" style="background: #E6F4EA; color: var(--google-green);">💬</div>
+            <div class="step-text"><strong>Ask Questions:</strong> Switch to the Chat tab to query the AI assistant.</div>
+          </li>
+          <li>
+            <div class="step-icon" style="background: #FEF7E0; color: #E37400;">📊</div>
+            <div class="step-text"><strong>View Citations:</strong> The AI provides direct citations back to the catalog evidence.</div>
+          </li>
+        </ul>
+        
+        <div class="modal-warning">
+          <strong>⚠️ Important Note on Latency</strong>
+          <p>This system is deployed on a server that may experience slight delays when fetching complex data. Please be patient while we retrieve your insights.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="start-btn" onclick="closeModal()">Start Exploring</button>
+      </div>
+    </div>
   </div>
-  
-  <script src="/static/script.js"></script>
+
+  <script src="/static/research-status.js?v=catalog-34"></script>
+  <script src="/static/script.js?v=catalog-34"></script>
 </body>
 </html>

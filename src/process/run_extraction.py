@@ -65,7 +65,7 @@ def run_extraction_and_indexing(reset=False):
     metas = []
     ids = []
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         futures = [executor.submit(process_review, r, llm) for r in reviews]
         for future in tqdm(concurrent.futures.as_completed(futures), total=len(reviews)):
             result = future.result()

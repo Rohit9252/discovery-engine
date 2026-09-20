@@ -11,6 +11,8 @@ searches = [
     "google photos ask photos review",
     "google photos search not working",
     "google photos find old photos",
+    "google photos video search not working",
+    "google photos find videos",
 ]
 
 video_ids = {}

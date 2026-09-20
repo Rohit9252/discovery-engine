@@ -27,15 +27,17 @@ graph TD
 
 ## Data Sources
 
-Our database contains **848** verified user reviews detailing discovery and retrieval failures across three primary platforms:
+The refreshed database preserves **1,869 feedback records**. The dashboard and semantic search expose **1,731 source-scoped records**, with **138 historical Reddit records excluded pending product-context review**. This is not a count of confirmed retrieval failures.
 
-| Source | Count | Description |
-| :--- | :--- | :--- |
-| **Reddit** | 666 | Deep-dive complaints and workarounds (r/googlephotos, r/GooglePixel, etc.) |
-| **YouTube** | 97 | Tutorial comments highlighting UI/UX learning curves |
-| **Play Store** | 85 | Direct Android app reviews |
+| Source | Available records |
+| --- | ---: |
+| Play Store | 1,076 |
+| Reddit | 475 |
+| App Store | 107 |
+| YouTube | 73 |
 
-*(Note: Apple App Store reviews are currently unsupported due to API blocking, but the architecture supports ingesting them if a third-party scraper is provided).*
+Source receipts, exclusions, and limitations are documented in `../Docs/discovery-engine-collection-audit.md`.
+
 
 ## Tech Stack
 
@@ -65,26 +67,94 @@ OPENAI_API_KEY=your_openai_key_here
 YOUTUBE_API_KEY=your_youtube_key_here
 ```
 
-### 3. Run the Pipeline
-Execute the data pipeline sequentially:
-```bash
-# 1. Collect Data
-uv run python src/collect/reddit.py
-uv run python src/collect/youtube.py
-uv run python src/collect/play_store.py
+### 3. Refresh public feedback and semantic search
 
-# 2. Clean & Store in SQLite
-uv run python src/process/clean.py
-
-# 3. Extract Insights & Vectorize (ChromaDB)
-uv run python src/process/run_extraction.py --reset
+```powershell
+uv run python -m src.collect.refresh
+uv run python -m src.process.clean
+uv run python -m src.process.source_audit
+uv run python -m src.process.index_feedback
 ```
 
-### 4. Start the Dashboard
+Alternatively run `run_pipeline.bat`. Raw merges preserve prior evidence; inspect `data/collection-runs/latest-summary.json` for source errors or partial coverage. Semantic indexing of raw feedback does not perform or validate memory-specific AI extraction.
+
+### 4. Start the Dashboard on port 8000
 ```bash
-uv run uvicorn src.app.api:app --port 8000
+uv run uvicorn src.app.api:app --host 127.0.0.1 --port 8000
 ```
-Open `http://localhost:8000` in your browser.
+Run that command inside `D:\Product Managment\Graduation Project\discovery-engine`, not the graduation project root. `uv run uv` starts the uv package manager again; `uv run uvicorn` starts the web server.
+
+From any directory, the included PowerShell launcher selects the correct project directory:
+```powershell
+& 'D:/Product Managment/Graduation Project/discovery-engine/start.ps1'
+# Optional automatic source reload:
+& 'D:/Product Managment/Graduation Project/discovery-engine/start.ps1' -Reload
+```
+
+Open `http://localhost:8000` in your browser. Stop a foreground server with Ctrl+C before starting another copy. The launcher stays on port 8000 and reports a collision instead of silently choosing another port. `/api/health` reports the app version and absolute database path.
+
+Before analysis, dashboard topics are provisional keyword matches. After analysis, cards and charts use saved source-grounded AI assessments. They count feedback records, not users or sessions, and do not establish severity, abandonment rates or search success rates. Missing storage and API errors display explicit unavailable states.
+
+## Deploy to Render (no recompute on the server)
+
+### Standing rule
+
+**Compute once on your machine. Ship results by git push. Render never recomputes.**
+
+- Local work may update `data/processed/reviews.db` and `data/processed/chroma_db/`.
+- Commit and push those artifacts with your code.
+- Render redeploys and serves the new files as-is.
+- Do **not** run scrape, extract, catalog/issue runners, or `index_feedback` in Render build/start. Ever.
+
+Seed paths (see `src/process/paths.py`):
+
+- SQLite: `data/processed/reviews.db`
+- Chroma: `data/processed/chroma_db/`
+
+### What you need
+
+1. GitHub access to this repo
+2. A [Render](https://render.com) account (GitHub signup is fine)
+3. `OPENAI_API_KEY` for live Chat (set only in Render Environment, never commit `.env`)
+
+You do **not** need YouTube/Gemini keys, Persistent Disk, Postgres, or Redis for Overview + Chat.
+
+### Create the Web Service
+
+1. Dashboard → **New +** → **Web Service** → connect `Rohit9252/discovery-engine`.
+2. Settings:
+
+| Field | Value |
+| --- | --- |
+| Branch | `feature/discovery-engine-overhaul` (or `main` after merge) |
+| Runtime | Python 3 |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn src.app.api:app --host 0.0.0.0 --port $PORT` |
+| Auto-Deploy | On |
+
+`Procfile` and `render.yaml` in the repo match this start command.
+
+3. Environment → add `OPENAI_API_KEY` (required). Optional: `PYTHON_VERSION=3.11.9`.
+4. Deploy, open the Render URL, confirm Overview stats load and Chat answers a question.
+
+### Future updates (2 days later or whenever)
+
+1. Finish any heavy processing **locally** (or skip if UI/code only).
+2. Commit code and, if data changed, updated `reviews.db` + `chroma_db`.
+3. Push to the branch Render watches.
+4. Render auto-redeploys. **No recomputation on Render.**
+
+## Retrieval research
+
+Run the resumable research workflow separately from collection:
+
+```powershell
+uv run python -m src.process.research_pipeline
+```
+
+This command uses the existing OpenAI API configuration for a corpus-wide first pass, a stronger assessment of retrieval candidates and possible missed matches, bounded retries, and an evidence report export. Successful current assessments are reused. Findings remain saved across server restarts; dashboard refreshes do not make extraction API calls.
+
+The Retrieval Evidence Review section shows original feedback, source links, remembered clues, explicitly missing details, attempted searches and actual workarounds. Unstated information remains not reported. AI analysis complete means all available records were assessed; it does not mean human validation. Methodology, verification and screenshots: `../Docs/discovery-engine-retrieval-analysis.md`.
 
 ## Project Structure
 

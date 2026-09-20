@@ -1,60 +1,28 @@
+from unittest.mock import patch
 import pytest
-from unittest.mock import patch, MagicMock
-from src.collect.reddit import scrape_reddit_posts, save_reddit_posts
-import json
+from src.collect.reddit import scrape_posts_by_keyword, scrape_comments_from_threads
 
-@patch('src.collect.reddit.requests.get')
-@patch('src.collect.reddit.time.sleep') # mock sleep so tests run instantly
-def test_scrape_reddit_posts_success(mock_sleep, mock_get):
-    """Test that the scraper correctly fetches and parses the Reddit JSON response."""
-    # Mock a successful JSON response matching Reddit's structure
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "data": {
-            "children": [
-                {
-                    "data": {
-                        "id": "abc123",
-                        "title": "Search is broken",
-                        "selftext": "I can't find anything.",
-                        "score": 10,
-                        "created_utc": 1672531200.0,
-                        "permalink": "/r/googlephotos/comments/abc123/"
-                    }
-                }
-            ]
-        }
-    }
-    mock_get.return_value = mock_response
-    
-    result = scrape_reddit_posts(queries=["test"], limit=1)
-    
-    assert len(result) == 1
-    assert result[0]['title'] == "Search is broken"
-    assert result[0]['url'] == "https://www.reddit.com/r/googlephotos/comments/abc123/"
-    mock_get.assert_called_once()
-    mock_sleep.assert_called_once() # Ensure rate-limiting sleep is triggered
 
-@patch('src.collect.reddit.requests.get')
-def test_scrape_reddit_posts_error(mock_get):
-    """Test that the scraper handles HTTP errors or rate limits without crashing."""
-    mock_get.side_effect = Exception("HTTP 429 Too Many Requests")
-    result = scrape_reddit_posts(queries=["test"])
-    
-    assert result == [] # Should safely return empty list
-
-def test_save_reddit_posts(tmp_path):
-    """Test that JSON saving works correctly."""
-    mock_posts = [
-        {"id": "abc", "title": "Test post"}
+@patch('src.collect.reddit.time.sleep')
+@patch('src.collect.reddit.get_json')
+def test_body_search_context_and_pagination(get_json, sleep):
+    get_json.side_effect = [
+        {'data':[{'id':'a','title':'Help please','selftext':'Google Photos search cannot find the receipt','created_utc':20}, {'id':'b','title':'Where to find a Pixel charger','created_utc':19}]},
+        {'data':[{'id':'c','title':'Ask Photos finds old memories','created_utc':10}]},
     ]
-    
-    output_file = tmp_path / "data" / "raw" / "test_reddit.json"
-    save_reddit_posts(mock_posts, str(output_file))
-    
-    assert output_file.exists()
-    with open(output_file, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        
-    assert len(data) == 1
-    assert data[0]['title'] == "Test post"
+    rows = scrape_posts_by_keyword(subreddits=['GooglePixel'], limit=2, pages=2)
+    assert set(rows) == {'a','c'}
+    assert get_json.call_args_list[1].args[1]['before'] == 19
+
+
+def test_comments_reject_unverified_historical_ids():
+    with pytest.raises(ValueError):
+        scrape_comments_from_threads(['1dqw3p4'])
+
+
+@patch('src.collect.reddit.get_json')
+def test_comment_uses_exact_link_and_parent_context(get_json):
+    get_json.return_value = {'data':[{'id':'c','body':'Search does not work','created_utc':10}]}
+    result = scrape_comments_from_threads([{'id':'p','title':'Ask Photos search','subreddit':'googlephotos','product_context_verified':True}])
+    assert result['comment_c']['url'].endswith('/p/_/c/')
+    assert result['comment_c']['context_title'] == 'Ask Photos search'

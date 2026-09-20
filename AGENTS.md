@@ -8,7 +8,6 @@ When building or modifying the Discovery Engine, agents must strictly adhere to 
 - **Orchestration**: LangChain / LangGraph (for multi-step agentic workflows and chat capabilities)
 - **Data Validation & Typing**: Pydantic / Pydantic AI
 - **Data Processing**: Pandas
-- **UI/Dashboard**: Streamlit
 - **LLM/Vision Model**: Gemini 1.5 Pro / Flash (via Google AI Studio APIs)
 
 ## Development Guidelines
