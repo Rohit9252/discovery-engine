@@ -48,7 +48,7 @@ def favicon():
     return FileResponse(STATIC_DIR / 'favicon.svg')
 
 
-@app.get('/api/health')
+@app.api_route('/api/health', methods=['GET', 'HEAD'])
 def health():
     import os
     db_exists = REVIEW_DATABASE.exists()

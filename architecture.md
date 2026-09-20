@@ -54,7 +54,7 @@ The user approved retaining FastAPI/static HTML and OpenAI while fixing the appl
 
 Standing rule: compute scrape/extract/index **locally**, commit `data/processed/reviews.db` and `data/processed/chroma_db/`, push, and let Render serve those files. Render start is uvicorn only (`Procfile` / `render.yaml`). No collectors, extraction runners, or Chroma rebuild on the platform. Live Chat still needs `OPENAI_API_KEY` in Render Environment for answering questions; that is not corpus reprocessing. Paths come from `src/process/paths.py` (`REVIEW_DATABASE`, `VECTOR_DATABASE`).
 - `start.ps1` selects the project directory and invokes `uv run uvicorn src.app.api:app --host 127.0.0.1 --port 8000`. Reload is optional. The script does not terminate arbitrary future port occupants. The confirmed orphaned old server was stopped during this approved repair.
-- `/api/health` reports version `baseline-1` and the expected SQLite location. Server logs from this session live under ignored `data/logs/`.
+- `/api/health` reports version `baseline-1` and the expected SQLite location. It accepts both GET and HEAD so HTTP uptime monitors (for example UptimeRobot, which defaults to HEAD) receive 200 instead of 405. Server logs from this session live under ignored `data/logs/`.
 
 Verification: six API/storage regressions passed. SQLite and Chroma ID sets matched exactly at 558 records. Desktop/mobile document overflow checks and the mobile chat toggle passed. The active app is on port 8000; the older port 8001 and Streamlit processes were not changed. Chat relevance/grounding repair and validated retrieval extraction are still pending later steps.
 

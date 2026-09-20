@@ -73,6 +73,7 @@ def test_static_page_and_health_contract():
     health = client.get('/api/health').json()
     assert health['app'] == 'discovery-engine'
     assert health['version'] == 'baseline-1'
+    assert client.head('/api/health').status_code == 200
 
 
 def test_api_excludes_unconfirmed_context_without_losing_stored_count(tmp_path, monkeypatch):
