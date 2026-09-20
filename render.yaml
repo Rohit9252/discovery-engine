@@ -3,8 +3,11 @@ services:
     name: discovery-engine
     runtime: python
     plan: free
-    branch: feature/discovery-engine-overhaul
-    buildCommand: pip install -r requirements.txt
+    branch: main
+    # uv override matches local pyproject: app-store-scraper wants old requests;
+    # collectors are not run on Render, but deps stay installable.
+    # Seed data (reviews.db + chroma_db) ships from git - Render never recomputes.
+    buildCommand: pip install uv && uv pip install --system -r requirements.txt --override requests>=2.31.0
     startCommand: uvicorn src.app.api:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
     envVars:
