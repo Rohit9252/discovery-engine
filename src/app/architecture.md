@@ -21,3 +21,7 @@ Overview Discovery Insights includes: Top Discovery Signals, Search Methods, Fru
 The second insight row (Failing Entities, Remembered Clues, Journey Breakdown) uses a full-width `.insight-row-3` wrapper so the three cards share equal width and do not leave an empty fourth column in the 4-column grid.
 
 Dataset Overview labels use plain product language (Catalog Rows, AI Assessed Rows, Possible Issue Patterns, Possible User Reports). Each stat card and the section title have an info tooltip explaining the metric in plain English.
+
+## Chat Suggestion chips and guardrails
+
+The Chat tab Suggestion sidebar lists the four incomplete-memory research questions first (kinds of old photos, what people remember, what they forgot, how they search with incomplete memory), then two general retrieval chips. `/api/chat` routes to `catalog_chat.py`, which enforces Google Photos-only scope and prompt-injection resistance in the system prompt.
