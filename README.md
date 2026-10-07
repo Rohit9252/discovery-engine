@@ -1,127 +1,169 @@
-# Lens - Google Photos Discovery Engine
+# Lens: Google Photos discovery engine
 
-Lens is an AI-powered product management research tool designed to analyze and synthesize qualitative user feedback regarding search and retrieval failures in Google Photos.
+Lens is an AI discovery engine that reads public feedback about Google Photos search and records, for every post, where the search broke, what failed and what the person still remembered. It was built to find out why people fail to retrieve a photo they remember but cannot precisely describe, before proposing any solution.
 
-## Context & Why It Was Built
+**Headline finding:** 8 of 10 failure posts break on the results screen, not while describing the photo.
 
-In 2024, Google launched "Ask Photos," a Gemini-powered natural language search feature. It faced latency and quality issues, resulting in a toggle to revert to "classic" search being introduced in 2026. Despite the feature, active Reddit threads and reviews consistently point to failures in retrieving old or poorly tagged photos. 
+**Live dashboard and chat:** https://discovery-engine-h9y4.onrender.com
 
-Instead of treating conversational AI as a silver bullet, Lens was built to extract **why** search fails. It automatically scrapes, cleans, and synthesizes hundreds of real user complaints to identify specific failure stages (Execution, Post-Execution, Discovery) and surface actionable product opportunities based on the pain points.
+## Why AI
 
-## Architecture Pipeline
+- 3,000 rows are too many to read by hand.
+- AI cut the 1,397 cleaned posts to 563 search-related posts to read (60% less).
+- The same questions are asked of every post, so posts can be counted and compared.
+- Every finding links to a real quote from the post.
+- The chat answers new questions with links to the posts behind each answer.
 
-The system operates on a 5-stage autonomous data pipeline:
+## Dataset
+
+| Stage | Count | What it means |
+| --- | ---: | --- |
+| Collected | 3,000 | 1,102 user posts and 295 web summaries from 6 public sources, plus 1,603 web-grounded scenarios |
+| After cleaning | 1,397 | Rows not written by users removed; every remaining row is unique |
+| Search-related | 563 | Posts about finding photos with search |
+| Describe a failed search | **524** | 473 first-hand posts and 51 web summaries |
+
+The 1,603 web-grounded scenarios are not posts written by users. They are tagged as scenarios and left out of every count, chart and percentage.
+
+| Source | Posts after cleaning | Failed-search posts |
+| --- | ---: | ---: |
+| Reddit | 674 | 187 |
+| Google Play Store | 336 | 223 |
+| Google Photos Community, Help and Blog | 248 | 58 |
+| Apple App Store | 78 | 43 |
+| YouTube | 30 | 2 |
+| Forums and other | 31 | 11 |
+| **Total** | **1,397** | **524** |
+
+## Workflow
 
 ```mermaid
-graph TD
-    A[1. Ingest] --> B[2. Clean]
-    B --> C[3. Embed]
-    C --> D[4. Store]
-    D --> E[5. Synthesize]
+graph LR
+    A[1. Collect] --> B[2. Clean]
+    B --> C[3. Tag]
+    C --> D[4. Validate]
+    D --> E[5. Deliver]
 ```
-1. **Ingest:** Scrape Reddit, YouTube, and App Stores for user complaints.
-2. **Clean:** Normalize schemas, deduplicate, and store in SQLite.
-3. **Embed:** Use LLM to extract failure stages and generate vector embeddings.
-4. **Store:** Save vectorized representations in ChromaDB.
-5. **Synthesize:** LangGraph Corrective-RAG agent retrieves relevant evidence and generates structured PM insights.
 
-## Data Sources
+1. **Collect:** Reddit, Play Store, App Store, Google Photos Community, YouTube and forums.
+2. **Clean:** remove posts not written by users and check for duplicates (each of the 1,397 rows has a unique content hash).
+3. **Tag:** GPT-4o-mini reads every post and records where it broke, what failed and what was remembered.
+4. **Validate:** quotes are checked against the post, and tags must come from fixed lists.
+5. **Deliver:** a dashboard of the tagged posts, and a chat that answers with quotes and source links.
 
-The refreshed database preserves **1,869 feedback records**. The dashboard and semantic search expose **1,731 source-scoped records**, with **138 historical Reddit records excluded pending product-context review**. This is not a count of confirmed retrieval failures.
+## What the AI records for each post
 
-| Source | Available records |
-| --- | ---: |
-| Play Store | 1,076 |
-| Reddit | 475 |
-| App Store | 107 |
-| YouTube | 73 |
+Defined in `src/process/catalog_schema.py` (`CatalogAssessment`):
 
-Source receipts, exclusions, and limitations are documented in `../Docs/discovery-engine-collection-audit.md`.
+- **Search relevance:** is the post about finding photos with search (yes, no, unclear)?
+- **Issue class:** observed failed search, direct memory problem, search request, successful search, related context, unrelated, unclear, or scenario.
+- **Target:** photo, video, screenshot, document or album.
+- **Remembered clues:** person, pet, place, event, approximate time, object or scene, visible text, personal context.
+- **Forgotten details:** date, place, album, exact words, person or other, only when the post says so explicitly.
+- **Search methods:** keyword, person or face, place, date, album, natural language, Ask Photos, browsing or scrolling.
+- **Symptoms:** no results, expected photo missing, wrong results, hard to evaluate, can't refine, face grouping, wrong date or place, navigation, search unavailable, slow or error, other.
+- **Journey stage:** describing the memory, matching, checking the results, refining the query, or browsing.
+- **Quotes:** the exact words behind the issue, the remembered clue, the attempted action and the result.
+- **Confidence and a one-line summary.**
 
+## Quality checks
 
-## Tech Stack
+| Check | Where it runs |
+| --- | --- |
+| Quotes must match the post word for word | `validate_catalog_assessment` aligns every quote to the post text; if the model paraphrased, the quote falls back to the post's exact original text |
+| Tags only from fixed lists | Pydantic `Literal` types in `catalog_schema.py` reject any other value |
+| Duplicates and source links checked | Each row keeps its row ID, source link and content hash; changed rows are assessed again |
+| Tested on hard example posts | `tests/process/test_catalog_assessment.py` (multi-tag posts, praise and requests that must not count as issues, paraphrased quotes, "cannot find" that is not a forgotten detail) |
 
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Backend API** | FastAPI | High-performance Python async API |
-| **AI Agent** | LangGraph + OpenAI | Corrective-RAG orchestration and synthesis (`gpt-4o-mini`) |
-| **Vector DB** | ChromaDB | Semantic search and embedding storage |
-| **Relational DB** | SQLite | Raw data storage and deduplication |
-| **Frontend** | Vanilla JS + Chart.js | Dynamic, reactive dashboard UI |
-| **Package Manager** | uv | Extremely fast Python dependency management |
+Assessment `phase1-catalog-v4`, model `gpt-4o-mini`, one pass over all 3,000 rows (3,000 succeeded). No second AI pass was run on this data.
 
-## Local Setup
+## What AI found
 
-### 1. Clone & Install
-Ensure you have [uv](https://docs.astral.sh/uv/) installed.
+Percentages use the 473 first-hand failure posts and leave out the 51 web summaries.
+
+| Finding | Share | Count |
+| --- | ---: | ---: |
+| Broke once results appeared (the photo was missing or not recognised) | **81%** | 345 of 426 stage mentions |
+| Say the expected photo was missing | 60% | 283 of 473 |
+| Broke while describing the photo | 17% | 74 of 426 stage mentions |
+
+What people still remembered in those posts: an object or scene (79), an event (65), a person (55), a place (24) and an approximate time (24).
+
+## Hypotheses to validate
+
+The findings became six hypotheses. Public posts are directional signals, so each one was then tested in user research: 5 interviews with 20 live searches, and a survey of 43 people.
+
+| Hypothesis | What user research showed | Verdict |
+| --- | --- | --- |
+| H1 · Can't describe it | 19 of 20 described it, by people and occasion rather than the words search matches | Reframed |
+| H2 · Search misses clues | 6 of 19 never returned | Partly true |
+| H3 · Missed in results | 7 of 13 shown but missed | Validated |
+| H4 · A retry rescues it | 2 of 16 failed first tries rescued | Rejected |
+| H5 · Start with search | 0 of 5 began there | Rejected |
+| H6 · Occasions fail most | 0 of 8 occasion photos found, against 5 of 9 documents and objects | Validated |
+
+## Limits
+
+- Public posts show where people complain, not how often search fails for everyone.
+- Counts are posts, not users or search sessions.
+- One AI pass with fixed tags; the tags were not all reviewed by a person.
+
+## Run it locally
+
+Install [uv](https://docs.astral.sh/uv/), then:
+
 ```bash
 git clone https://github.com/Rohit9252/discovery-engine.git
 cd discovery-engine
 uv sync
 ```
 
-### 2. Environment Variables
-Create a `.env` file in the root directory:
+Create `.env` in the project root:
+
 ```env
 OPENAI_API_KEY=your_openai_key_here
-YOUTUBE_API_KEY=your_youtube_key_here
+YOUTUBE_API_KEY=your_youtube_key_here   # only for refreshing YouTube comments
 ```
 
-### 3. Refresh public feedback and semantic search
+Import the 3,000 rows and tag them (resumable; finished rows are reused):
+
+```powershell
+uv run python -m src.ingest.phase1_catalog
+uv run python -m src.process.catalog_runner
+```
+
+Start the dashboard on port 8000, from inside this folder:
+
+```bash
+uv run uvicorn src.app.api:app --host 127.0.0.1 --port 8000
+```
+
+Or, from any directory, `& 'D:/Product Managment/Graduation Project/discovery-engine/start.ps1'` (add `-Reload` for automatic reload). Open `http://localhost:8000`. `/api/health` reports the app version and the database path.
+
+### Collectors
+
+The collectors refresh raw public feedback and are separate from the tagged dataset above:
 
 ```powershell
 uv run python -m src.collect.refresh
 uv run python -m src.process.clean
 uv run python -m src.process.source_audit
-uv run python -m src.process.index_feedback
 ```
-
-Alternatively run `run_pipeline.bat`. Raw merges preserve prior evidence; inspect `data/collection-runs/latest-summary.json` for source errors or partial coverage. Semantic indexing of raw feedback does not perform or validate memory-specific AI extraction.
-
-### 4. Start the Dashboard on port 8000
-```bash
-uv run uvicorn src.app.api:app --host 127.0.0.1 --port 8000
-```
-Run that command inside `D:\Product Managment\Graduation Project\discovery-engine`, not the graduation project root. `uv run uv` starts the uv package manager again; `uv run uvicorn` starts the web server.
-
-From any directory, the included PowerShell launcher selects the correct project directory:
-```powershell
-& 'D:/Product Managment/Graduation Project/discovery-engine/start.ps1'
-# Optional automatic source reload:
-& 'D:/Product Managment/Graduation Project/discovery-engine/start.ps1' -Reload
-```
-
-Open `http://localhost:8000` in your browser. Stop a foreground server with Ctrl+C before starting another copy. The launcher stays on port 8000 and reports a collision instead of silently choosing another port. `/api/health` reports the app version and absolute database path.
-
-Before analysis, dashboard topics are provisional keyword matches. After analysis, cards and charts use saved source-grounded AI assessments. They count feedback records, not users or sessions, and do not establish severity, abandonment rates or search success rates. Missing storage and API errors display explicit unavailable states.
 
 ## Deploy to Render (no recompute on the server)
-
-### Standing rule
 
 **Compute once on your machine. Ship results by git push. Render never recomputes.**
 
 - Local work may update `data/processed/reviews.db` and `data/processed/chroma_db/`.
-- Commit and push those artifacts with your code.
-- Render redeploys and serves the new files as-is.
-- Do **not** run scrape, extract, catalog/issue runners, or `index_feedback` in Render build/start. Ever.
+- Commit and push those files with your code.
+- Render redeploys and serves the new files as they are.
+- Do **not** run scraping, tagging or indexing in the Render build or start commands.
 
-Seed paths (see `src/process/paths.py`):
+Seed paths (see `src/process/paths.py`): SQLite `data/processed/reviews.db`, Chroma `data/processed/chroma_db/`.
 
-- SQLite: `data/processed/reviews.db`
-- Chroma: `data/processed/chroma_db/`
+### Create the web service
 
-### What you need
-
-1. GitHub access to this repo
-2. A [Render](https://render.com) account (GitHub signup is fine)
-3. `OPENAI_API_KEY` for live Chat (set only in Render Environment, never commit `.env`)
-
-You do **not** need YouTube/Gemini keys, Persistent Disk, Postgres, or Redis for Overview + Chat.
-
-### Create the Web Service
-
-1. Dashboard → **New +** → **Web Service** → connect `Rohit9252/discovery-engine`.
+1. Render dashboard → **New +** → **Web Service** → connect `Rohit9252/discovery-engine`.
 2. Settings:
 
 | Field | Value |
@@ -132,46 +174,41 @@ You do **not** need YouTube/Gemini keys, Persistent Disk, Postgres, or Redis for
 | Start Command | `uvicorn src.app.api:app --host 0.0.0.0 --port $PORT` |
 | Auto-Deploy | On |
 
-`Procfile` and `render.yaml` target **`main` only**.
+3. Environment: add `OPENAI_API_KEY` (required for the chat) and `PYTHON_VERSION=3.11.9`.
+4. Deploy, open the Render URL, and check that the overview loads and the chat answers a question.
 
-Also set Environment `PYTHON_VERSION` = `3.11.9` (your failed logs used Python 3.14 wheels; 3.11 is safer).
+`app-store-scraper` is left out of `requirements.txt` because it pins an old `requests` version; it is only needed for local collection (`uv sync` installs it from `pyproject.toml`).
 
-**Why builds failed before:** `app-store-scraper` required `requests==2.23.0` while the app needs `requests==2.34.2`. That scraper is for local collection only and is removed from `requirements.txt` used on Render. Seed data (`reviews.db` + `chroma_db`) is already on `main` and deploys with the code automatically. Collectors stay available locally via `uv sync` / `pyproject.toml`.
+### Later updates
 
-3. Environment → add `OPENAI_API_KEY` (required). Optional: `PYTHON_VERSION=3.11.9`.
-4. Deploy, open the Render URL, confirm Overview stats load and Chat answers a question.
+1. Finish any heavy processing locally (skip for code-only changes).
+2. Commit the code and, if the data changed, the updated `reviews.db` and `chroma_db`.
+3. Push to `main`. Render redeploys without recomputing.
 
-### Future updates (2 days later or whenever)
+## Tech stack
 
-1. Finish any heavy processing **locally** (or skip if UI/code only).
-2. Commit code and, if data changed, updated `reviews.db` + `chroma_db`.
-3. Push to the branch Render watches.
-4. Render auto-redeploys. **No recomputation on Render.**
+| Layer | Technology |
+| --- | --- |
+| Tagging and chat | OpenAI `gpt-4o-mini` through LangChain |
+| Schemas and validation | Pydantic |
+| Data | SQLite, Pandas |
+| API | FastAPI |
+| Dashboard | Vanilla JS and Chart.js |
+| Packages | uv |
 
-## Retrieval research
-
-Run the resumable research workflow separately from collection:
-
-```powershell
-uv run python -m src.process.research_pipeline
-```
-
-This command uses the existing OpenAI API configuration for a corpus-wide first pass, a stronger assessment of retrieval candidates and possible missed matches, bounded retries, and an evidence report export. Successful current assessments are reused. Findings remain saved across server restarts; dashboard refreshes do not make extraction API calls.
-
-The Retrieval Evidence Review section shows original feedback, source links, remembered clues, explicitly missing details, attempted searches and actual workarounds. Unstated information remains not reported. AI analysis complete means all available records were assessed; it does not mean human validation. Methodology, verification and screenshots: `../Docs/discovery-engine-retrieval-analysis.md`.
-
-## Project Structure
+## Project structure
 
 ```text
 discovery-engine/
 ├── data/
-│   ├── processed/         # SQLite DB and ChromaDB vector files
-│   └── raw/               # JSON outputs from collectors
+│   ├── processed/         # reviews.db (posts and AI tags) and Chroma files
+│   └── raw/               # collector outputs
 ├── src/
-│   ├── app/               # FastAPI backend and static HTML/JS/CSS frontend
-│   ├── collect/           # Python scraping scripts for Reddit, YouTube, Play Store
-│   └── process/           # Cleaning pipeline, DB schemas, LLM extraction, LangGraph agent
-├── .env                   # API keys
-├── pyproject.toml         # Dependencies managed by uv
-└── README.md              # Project documentation
+│   ├── app/               # FastAPI app and the dashboard (HTML, JS, CSS)
+│   ├── collect/           # collectors for Reddit, Play Store, App Store, YouTube and forums
+│   ├── ingest/            # imports the 3,000-row dataset with its evidence types
+│   └── process/           # cleaning, tagging schema and runner, dashboard data, chat
+├── tests/                 # collector, import, tagging and API tests
+├── pyproject.toml
+└── README.md
 ```
